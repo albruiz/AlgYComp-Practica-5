@@ -130,7 +130,6 @@ def pintaCaminoMejor(matriz, puntoFin, puntoInicio, matrizGrande):
     inicial = puntoMatrizHabitaciones(puntoInicio)
     # final = punto del que se parte, inicial = punto al que hay que llegar
     condicion = False
-    contador = 0
     while condicion == False:
 
         posiblesPuntos = getPuntos(matriz, final, matrizGrande)
@@ -139,11 +138,11 @@ def pintaCaminoMejor(matriz, puntoFin, puntoInicio, matrizGrande):
         final = siguientePunto
         if siguientePunto == inicial: condicion = True
         else: pass
-        contador += 1
-        if contador == 10 :  condicion = True
+
 
     coordenadasCamino.pop(0)
     coordenadasCamino.pop(len(coordenadasCamino) - 1)
+    print(coordenadasCamino)
     for i in coordenadasCamino:
         aux = puntoReal(i)
         plot(aux[1]/len(matrizGrande), (len(matrizGrande) -1 - aux[0])/len(matrizGrande), 'Hm')
@@ -283,7 +282,9 @@ def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
         else: 
             a = puntoReal([valorX, valorY])
             plot((a[1] )/len(matriz),(len(matriz) -1 - a[0])/len(matriz), 'sb')
-        if contador == (len(matriz) * 50): return 1 #limite por si no encuentra caminos
+        if contador == (len(matriz) * 50): 
+            print(contador)
+            return 1 #limite por si no encuentra caminos
     pintaCaminoMejor(cola, puntoFinal, puntoInicial, matriz)
     return 0
 
@@ -292,9 +293,9 @@ def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
 
 #main
 solucion = []
-size = 10
+size = 20
 ratio = 1
-seed = 7
+seed = 1312
 start_time = time()
 solucion = generaLaberinto(size,ratio,seed)
 matriz = solucion[0]
@@ -315,4 +316,7 @@ else:
     print("No hay soluciones posibles")
     elapsed_time = time() - start_time
     print("El programa tarda en ejecutarse %.10f" %elapsed_time, "segundos")
+    plot((puntoInicial[1])/(size*2+1), (len(matriz)- 1 - puntoInicial[0])/(size*2+1),  'sc')
+    plot(puntoFinal[1]/(size*2+1), (len(matriz)- 1 - puntoFinal[0])/(size*2+1), 'sr')
+    show()
 
