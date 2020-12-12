@@ -18,13 +18,11 @@ def generaLaberinto(size, ratio, semilla):
     matriz_size = size*2+1
     matriz = np.zeros((matriz_size,matriz_size))
     # Rellena con habitación o pared
-    count = 0
     for i in range(matriz_size):
         for j in range(matriz_size):
             if i % 2 == 1 and j % 2 == 1: matriz[i][j] = 0
             else: 
                 matriz[i][j] = 10
-                count += 1
     num_doors = 2 * (size-1) * (size-1)
     open = ratio * num_doors
     # Quita paredes
@@ -45,7 +43,7 @@ def generaLaberinto(size, ratio, semilla):
             row = row * 2 + 2
             col = col * 2 + 1 
             
-        matriz[row][col] = random.randint(0,9)
+        matriz[row][col] = random.randint(1,9)
 
     # Escoge y marca habitación de salida
     rowSal = random.randint(0, size-1)
@@ -59,19 +57,96 @@ def generaLaberinto(size, ratio, semilla):
     colDes = random.randint(0, size-1)
     xentrada, yentrada =  rowDes*2+1, colDes*2+1
     matriz[xentrada][yentrada] = -2 
-    solucion = [matriz, [xsalida,ysalida], [xentrada, yentrada], count]
+    solucion = [matriz, [xsalida,ysalida], [xentrada, yentrada]]
     return solucion
+
+
+# Funcion que devuelve los puntos sobre los que podrá elegir el menor para dibujar el camino
+# solucion
+# Recibe por parametros la matriz de habitaciones y el punto sobre el que tiene que buscar los adyacentes
+def getPuntos(matriz, punto, matrizGrande):
+    # punto X, Y
+    x, y = punto[0], punto[1]
+    posiblesPuntos = []
+    if x - 1 >= 0:
+        puntoIntermedio = puntoReal([x-1, y])
+        puntoIntermedio[0] += 1
+        if matrizGrande[puntoIntermedio[0]][puntoIntermedio[1]] != 10:
+            posiblesPuntos.append([x-1, y])
+        else: pass
+    else: pass
+
+    if x + 1 <= (len(matriz) - 1):
+        puntoIntermedio = puntoReal([x + 1, y])
+        puntoIntermedio[0] -= 1
+        if matrizGrande[puntoIntermedio[0]][puntoIntermedio[1]] != 10:
+            posiblesPuntos.append([x+1, y])
+        else: pass
+    else: pass
+
+    if y - 1 >= 0:
+        puntoIntermedio = puntoReal([x, y - 1])
+        puntoIntermedio[0] += 1
+        if matrizGrande[puntoIntermedio[0]][puntoIntermedio[1]] != 10:
+            posiblesPuntos.append([x, y - 1])
+        else: pass
+    else: pass
+
+    if y + 1 <= (len(matriz) - 1):
+        puntoIntermedio = puntoReal([x, y + 1])
+        puntoIntermedio[1] -= 1
+        if matrizGrande[puntoIntermedio[0]][puntoIntermedio[1]] != 10:
+            posiblesPuntos.append([x, y+1])
+        else: pass
+    else: pass
+    puntosFinales = []
+    for i in range(len(posiblesPuntos)):
+        if matriz[posiblesPuntos[i][0]][posiblesPuntos[i][1]] != math.inf:
+            puntosFinales.append(posiblesPuntos[i])
+        else: pass
+    #posiblesPuntos Es el vector de los puntos que tienen valores menores de infinito
+    return puntosFinales
+
+# Funcion que devuelve las coordenadas del punto que menor distancia acumulada tenga de los que tenga el vector
+# Recibe por parametros la matriz que tendrá almacenada las distancias y el Vector con los puntos posibles
+def getPuntoMinimo(matriz, vectorPuntos):
+    puntoMinimo = []
+    minimo = math.inf
+    for i in vectorPuntos:
+        if matriz[i[0]][i[1]] <= minimo:
+            minimo = matriz[i[0]][i[1]]
+            puntoMinimo = i
+        else: pass
+    return puntoMinimo
 
 
 # Funcion que dibuja el mejor camino dentro de todos los caminos observados, elige partiendo del nodo destino, el menor peso con sus vecinos
 # asi recursivamente hasta que alcanza el punto inicial y para de buscar porque ya tendra el camino solucion
 # Recibe como argumentos, la matriz de las habitaciones con los costes para llegar del nodo inicio al nodo fin ya calculados
-def pintaCaminoMejor(matriz, puntoFin, puntoInicio):
-    coordenadasCamino = np.array([])
-    coordenadasCamino = np.append(coordenadasCamino,'hola')
-    x = puntoMatrizHabitaciones(puntoFin)
-    y = puntoMatrizHabitaciones(puntoInicio)
-    print(matriz, puntoFin, puntoInicio, x, y, matriz[x[0]][x[1]], matriz[y[0]][y[1]])
+def pintaCaminoMejor(matriz, puntoFin, puntoInicio, matrizGrande):
+    coordenadasCamino = []
+    final = puntoMatrizHabitaciones(puntoFin)
+    coordenadasCamino.append(final)
+    inicial = puntoMatrizHabitaciones(puntoInicio)
+    # final = punto del que se parte, inicial = punto al que hay que llegar
+    condicion = False
+    contador = 0
+    while condicion == False:
+
+        posiblesPuntos = getPuntos(matriz, final, matrizGrande)
+        siguientePunto = getPuntoMinimo(matriz, posiblesPuntos)
+        coordenadasCamino.append(siguientePunto)
+        final = siguientePunto
+        if siguientePunto == inicial: condicion = True
+        else: pass
+        contador += 1
+        if contador == 10 :  condicion = True
+
+    coordenadasCamino.pop(0)
+    coordenadasCamino.pop(len(coordenadasCamino) - 1)
+    for i in coordenadasCamino:
+        aux = puntoReal(i)
+        plot(aux[1]/len(matrizGrande), (len(matrizGrande) -1 - aux[0])/len(matrizGrande), 'Hm')
 
 
 # Funcion que dibuja la matriz con su punto de inicio, punto de fin y el laberinto
@@ -129,7 +204,7 @@ def puntoReal(punto):
 # Recibe como parametros el peso de la matriz, y el peso acumulado
 def calculaPeso(peso, pesoAcumulado):
     if peso == 10 : 
-        return 1000000
+        return math.inf
     else:
         return (pesoAcumulado + peso)
 
@@ -139,7 +214,7 @@ def calculaPeso(peso, pesoAcumulado):
 def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
     # Cola = almacena el costo de ir a cada una de las puertas (peso acumulado)
     comprobacion = np.full((numHabitaciones,numHabitaciones), False)
-    cola = np.full((numHabitaciones,numHabitaciones), 1000000)
+    cola = np.full((numHabitaciones,numHabitaciones), math.inf)
     posicionInicial = [(int)(puntoInicial[0]-1)/2 , (int)(puntoInicial[1]-1)/2]
     valorX, valorY = (int)(posicionInicial[0]), (int)(posicionInicial[1])
     cola[valorX][valorY] = 0
@@ -157,7 +232,7 @@ def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
                 cola[punto1[0], punto1[1]] = calculaPeso(peso, cola[valorX][valorY])
             else: pass
 
-            if cola[punto1[0], punto1[1]] < 10000:
+            if cola[punto1[0], punto1[1]] < math.inf:
                 plot((punto1Grande[1]/len(matriz)), (len(matriz) - 1 - punto1Grande[0])/len(matriz), 'sb')
         
         if punto2[0] < numHabitaciones and punto2[1] < numHabitaciones and punto2[0] >= 0 and punto2[1] >= 0:
@@ -167,7 +242,7 @@ def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
                 cola[punto2[0], punto2[1]] = calculaPeso(peso, cola[valorX][valorY])
             else: pass 
 
-            if cola[punto2[0], punto2[1]] < 10000:
+            if cola[punto2[0], punto2[1]] < math.inf:
                 plot((punto2Grande[1])/len(matriz),( len(matriz) - 1 - punto2Grande[0])/len(matriz), 'sb')
 
         # Variantes de Y
@@ -178,7 +253,7 @@ def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
                 cola[punto3[0], punto3[1]] = calculaPeso(peso, cola[valorX][valorY])
             else: pass
 
-            if cola[punto3[0], punto3[1]] < 10000:
+            if cola[punto3[0], punto3[1]] < math.inf:
                 plot((punto3Grande[1])/len(matriz), (len(matriz) - 1 - punto3Grande[0])/len(matriz), 'sb') 
         
         if punto4[0] < numHabitaciones and punto4[1] < numHabitaciones and punto4[0] >= 0 and punto4[1] >= 0:
@@ -188,11 +263,11 @@ def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
                 cola[punto4[0], punto4[1]] = calculaPeso(peso, cola[valorX][valorY])
             else: pass
 
-            if cola[punto4[0], punto4[1]] < 10000:
+            if cola[punto4[0], punto4[1]] < math.inf:
                 plot((punto4Grande[1])/len(matriz), (len(matriz) -1 - punto4Grande[0])/len(matriz), 'sb')     
 
         var1, var0 = -1, -1
-        minimo = 100000
+        minimo = math.inf
         for i in range(len(cola)):
             for j in range(len(cola[i])):
                 if minimo > cola[i][j] and cola[i][j] >= cola[valorX][valorY] and comprobacion[i][j] == False:
@@ -209,7 +284,7 @@ def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
             a = puntoReal([valorX, valorY])
             plot((a[1] )/len(matriz),(len(matriz) -1 - a[0])/len(matriz), 'sb')
         if contador == (len(matriz) * 50): return 1 #limite por si no encuentra caminos
-    pintaCaminoMejor(cola, puntoInicial, puntoFinal)
+    pintaCaminoMejor(cola, puntoFinal, puntoInicial, matriz)
     return 0
 
 
@@ -217,7 +292,7 @@ def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
 
 #main
 solucion = []
-size = 11
+size = 10
 ratio = 1
 seed = 7
 start_time = time()
@@ -225,7 +300,7 @@ solucion = generaLaberinto(size,ratio,seed)
 matriz = solucion[0]
 puntoInicial = solucion[1]
 puntoFinal = solucion[2]
-numeroHabitaciones = solucion[3]
+numeroHabitaciones = size
 
 
 dibujamela(solucion[0],solucion[1], solucion[2], size)
