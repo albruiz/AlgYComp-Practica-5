@@ -11,10 +11,67 @@ from time import time
 
 import random
 
+# Funcion de estados aleatorios dada por Arturo
+# Recibe por parametros el estado actual
+def lfsr113(state):
+    z1 = state[0]
+    z2 = state[1]
+    z3 = state[2]
+    z4 = state[3]
+
+    b = (((z1 << 6) ^ z1) >> 13)
+    z1 = (((z1 & 4294967294) << 18) ^ b)
+
+    b = (((z2 << 2) ^ z2) >> 27)
+    z2 = (((z2 & 4294967288) << 2) ^ b)
+
+    b = (((z3 << 13) ^ z3) >> 21)
+    z3 = (((z3 & 4294967280) << 7) ^ b)
+
+    b = (((z4 << 3) ^ z4) >> 12)
+    z4 = (((z4 & 4294967168) << 13) ^ b)
+
+    b = (z1 ^ z2 ^ z3 ^ z4)
+
+    state[0] = z1
+    state[1] = z2
+    state[2] = z3
+    state[3] = z4
+    
+    b = (b & 0xFFFFFFFF)
+
+    return(b)
+
+# Funcion de estados aleatorios dada por Arturo
+# Recibe por parametros la semilla y el vector de estados
+def lfsr113_seed(seed, state):
+    z1 = 2
+    z2 = 8
+    z3 = 16
+    z4 = 128
+
+    z1 = (z1 * (seed + 1))
+    z2 = (z2 * (seed + 1))
+    z3 = (z3 * (seed + 1))
+    z4 = (z4 * (seed + 1))
+
+    z1 = z1 if (z1 > 1) else z1 + 1
+    z2 = z2 if (z2 > 7) else z2 + 7
+    z3 = z3 if (z3 > 15) else z3 + 15
+    z4 = z4 if (z4 > 127) else z4 + 127
+
+    state.append(z1)
+    state.append(z2)
+    state.append(z3)
+    state.append(z4)
+
+    return(state)
+
+
 
 # Funcion que crea la matriz con las habitaciones y las paredes, ademas de dar el punto inicio y fin
 # Recibe como parametros el tamaño de la matriz de habitaciones, el ratio de paredes que tiene que eliminar y la semilla de random
-def generaLaberinto(size, ratio, semilla):
+def generaLaberinto(size, ratio, semilla, semilla2):
     matriz_size = size*2+1
     matriz = np.zeros((matriz_size,matriz_size))
     # Rellena con habitación o pared
@@ -26,35 +83,54 @@ def generaLaberinto(size, ratio, semilla):
     num_doors = 2 * (size-1) * (size-1)
     open = ratio * num_doors
     # Quita paredes
-    random.seed(a = semilla, version = 2)
+
+    estado = []
+    estado = lfsr113_seed(semilla, estado)
+    estado2 = []
+    estado2 = lfsr113_seed(semilla2, estado2)
+
+    #random.seed(a = semilla, version = 2)
     for i in range(open):
         row,col = 0, 0
-        vert_horz = random.randint(0,1)       
+        #vert_horz = random.randint(0,1)       
+        vert_horz = float(lfsr113(estado)) % 2
+        
         if  vert_horz == 0 :
-            row = random.randint(0,size-1)
-            col = random.randint(0,size-2)
+            #row = random.randint(0,size-1)
+            #col = random.randint(0,size-2)
+            row = lfsr113(estado) % (size)
+            col = lfsr113(estado) % (size-1)
             
             row = row * 2 + 1
             col = col * 2 + 2 
         else:
-            row = random.randint(0,size-2)
-            col = random.randint(0,size-1)
-            
+            #row = random.randint(0,size-2)
+            #col = random.randint(0,size-1)
+            row = lfsr113(estado) % (size-1)
+            col = lfsr113(estado) % (size)
+
             row = row * 2 + 2
             col = col * 2 + 1 
             
-        matriz[row][col] = random.randint(1,9)
+        #matriz[row][col] = random.randint(1,9)
+        matriz[row][col] = float(lfsr113(estado2)) % 10
+
 
     # Escoge y marca habitación de salida
-    rowSal = random.randint(0, size-1)
-    colSal = random.randint(0, size-1)
-    
+    #rowSal = random.randint(0, size-1)
+    #colSal = random.randint(0, size-1)
+    rowSal = (lfsr113(estado))  % size
+    colSal = (lfsr113(estado))  % size
+
     xsalida,ysalida = rowSal*2+1, colSal*2+1
     matriz[xsalida][ysalida] = -1 
 
     # Escoge y marca habitación de destino
-    rowDes = random.randint(0, size-1)
-    colDes = random.randint(0, size-1)
+    #rowDes = random.randint(0, size-1)
+    #colDes = random.randint(0, size-1)
+    rowDes = (lfsr113(estado))  % size
+    colDes = (lfsr113(estado))  % size
+
     xentrada, yentrada =  rowDes*2+1, colDes*2+1
     matriz[xentrada][yentrada] = -2 
     solucion = [matriz, [xsalida,ysalida], [xentrada, yentrada]]
@@ -133,7 +209,12 @@ def pintaCaminoMejor(matriz, puntoFin, puntoInicio, matrizGrande):
     while condicion == False:
 
         posiblesPuntos = getPuntos(matriz, final, matrizGrande)
-        siguientePunto = getPuntoMinimo(matriz, posiblesPuntos)
+        # recorrer posibles puntos para detectar puntos que ya se han recorrido y los eliminamos
+        vectorInteremedio = []
+        for i in range(len(posiblesPuntos)):
+            if (posiblesPuntos[i] in coordenadasCamino) == False: 
+                vectorInteremedio.append(posiblesPuntos[i])
+        siguientePunto = getPuntoMinimo(matriz, vectorInteremedio)
         coordenadasCamino.append(siguientePunto)
         final = siguientePunto
         if siguientePunto == inicial: condicion = True
@@ -142,7 +223,6 @@ def pintaCaminoMejor(matriz, puntoFin, puntoInicio, matrizGrande):
 
     coordenadasCamino.pop(0)
     coordenadasCamino.pop(len(coordenadasCamino) - 1)
-    print(coordenadasCamino)
     for i in coordenadasCamino:
         aux = puntoReal(i)
         plot(aux[1]/len(matrizGrande), (len(matrizGrande) -1 - aux[0])/len(matrizGrande), 'Hm')
@@ -296,8 +376,9 @@ solucion = []
 size = 20
 ratio = 1
 seed = 1312
+seed2 = 1213
 start_time = time()
-solucion = generaLaberinto(size,ratio,seed)
+solucion = generaLaberinto(size,ratio,seed, 1213)
 matriz = solucion[0]
 puntoInicial = solucion[1]
 puntoFinal = solucion[2]
