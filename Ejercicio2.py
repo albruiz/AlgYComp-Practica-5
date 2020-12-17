@@ -162,7 +162,7 @@ def getPuntos(matriz, punto, matrizGrande):
 
     if y - 1 >= 0:
         puntoIntermedio = puntoReal([x, y - 1])
-        puntoIntermedio[0] += 1
+        puntoIntermedio[1] += 1
         if matrizGrande[puntoIntermedio[0]][puntoIntermedio[1]] != 10:
             posiblesPuntos.append([x, y - 1])
         else: pass
@@ -189,11 +189,15 @@ def getPuntoMinimo(matriz, vectorPuntos):
     puntoMinimo = []
     minimo = math.inf
     for i in vectorPuntos:
-        if matriz[i[0]][i[1]] <= minimo:
+        if matriz[i[0]][i[1]] != None and matriz[i[0]][i[1]] <= minimo:
             minimo = matriz[i[0]][i[1]]
             puntoMinimo = i
         else: pass
     return puntoMinimo
+
+#####################
+#         pintaCaminoMejor(cola2, puntoIntermedioReal, puntoFinalReal, matriz)
+#####################
 
 
 # Funcion que dibuja el mejor camino dentro de todos los caminos observados, elige partiendo del nodo destino, el menor peso con sus vecinos
@@ -204,25 +208,28 @@ def pintaCaminoMejor(matriz, puntoFin, puntoInicio, matrizGrande):
     final = puntoMatrizHabitaciones(puntoFin)
     coordenadasCamino.append(final)
     inicial = puntoMatrizHabitaciones(puntoInicio)
+    
     # final = punto del que se parte, inicial = punto al que hay que llegar
     condicion = False
     while condicion == False:
 
         posiblesPuntos = getPuntos(matriz, final, matrizGrande)
         # recorrer posibles puntos para detectar puntos que ya se han recorrido y los eliminamos
-        vectorInteremedio = []
+        vectorIntermedio = []
+        #print(posiblesPuntos, 'posibles puntos', final, coordenadasCamino)
         for i in range(len(posiblesPuntos)):
             if (posiblesPuntos[i] in coordenadasCamino) == False: 
-                vectorInteremedio.append(posiblesPuntos[i])
-        siguientePunto = getPuntoMinimo(matriz, vectorInteremedio)
+                vectorIntermedio.append(posiblesPuntos[i])
+        #print(vectorIntermedio, 'conchatumadre',  coordenadasCamino, 'sobras', inicial)
+        siguientePunto = getPuntoMinimo(matriz, vectorIntermedio)
         coordenadasCamino.append(siguientePunto)
         final = siguientePunto
         if siguientePunto == inicial: condicion = True
         else: pass
 
 
-    coordenadasCamino.pop(0)
-    coordenadasCamino.pop(len(coordenadasCamino) - 1)
+    #coordenadasCamino.pop(0)
+    #coordenadasCamino.pop(len(coordenadasCamino) - 1)
     for i in coordenadasCamino:
         aux = puntoReal(i)
         plot(aux[1]/len(matrizGrande), (len(matrizGrande) -1 - aux[0])/len(matrizGrande), 'Hm')
@@ -256,6 +263,7 @@ def dibujamela(matriz,puntoInicio, puntoFin, tamano):
 # la matriz que solo almacena habitaciones.
 # Recibe como parametro el punto de la matriz grande que debera transformar
 def puntoMatrizHabitaciones(punto):
+    #print(punto)
     nuevasCoordenadas = [int((punto[0] - 1)/2), int((punto[1] - 1)/2)]
     return nuevasCoordenadas
 
@@ -298,7 +306,7 @@ def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
 
             if cola[punto1[0], punto1[1]] < math.inf:
                 plot((punto1Grande[1]/len(matriz)), (len(matriz) - 1 - punto1Grande[0])/len(matriz), 'sb')
-        
+
         if punto2[0] < numHabitaciones and punto2[1] < numHabitaciones and punto2[0] >= 0 and punto2[1] >= 0:
             punto2Grande = puntoReal(punto2)
             peso = matriz[punto2Grande[0] - 1][punto2Grande[1]]
@@ -347,14 +355,14 @@ def djikstra(matriz, puntoInicial, puntoFinal, numHabitaciones):
         else: 
             a = puntoReal([valorX, valorY])
             plot((a[1] )/len(matriz),(len(matriz) -1 - a[0])/len(matriz), 'sb')
+
         if contador == (len(matriz) * 50): 
-            print(contador)
             return 1 #limite por si no encuentra caminos
     pintaCaminoMejor(cola, puntoFinal, puntoInicial, matriz)
     return 0
 
 # Funcion que busca dentro de la matriz los puntos sobre los que puede moverse para encontrar el camino menor
-# realiza una busqueda entre los puntos adyacentes del punto introducido, si encuentra una pared no la anyade si encunetra una puerta
+# realiza una busqueda entre los puntos adyacentes del punto introducido, si encuentra una pared no la anyade solo ayade los puntos que pueden ser caminos
 # la almacena y ya sera el algortimo de Djiskstra quien se encargue de decidir si los puntos son buenos o no.
 # Recibe por parametros la matriz con los valores que sera de donde obtenga la informacion y el punto sobre el que buscara los adyacentes.
 def damePuntos(matriz, punto):
@@ -368,7 +376,7 @@ def damePuntos(matriz, punto):
     puntos.append([x, y-1])
     habitaciones.append(puntoMatrizHabitaciones([x, y-2]))
     puntos.append([x, y+1])
-    habitaciones.append(puntoMatrizHabitaciones([x, y-2]))
+    habitaciones.append(puntoMatrizHabitaciones([x, y+2]))
     contador = 0
     for i in puntos:
         if matriz[i[0]][i[1]] != 10: 
@@ -385,50 +393,124 @@ def damePuntos(matriz, punto):
 def djikstraBidireccional(matriz, puntoInicio, puntoFin, numHabitaciones):
     #Creacion de las colas, matrizBool se encargara de almacenar los puntos que se han mirado y servira para que 
     #cuando se encuentren las dos colas se sepa que son los puntos los que ya se han mirado y hay que determinar un camino optimo
-    cola1 = np.array([numHabitaciones, numHabitaciones])
-    cola2 = np.array([numHabitaciones, numHabitaciones])
-    matrizBool = np.full((numHabitaciones,numHabitaciones), False)
+    cola1 = np.full((numHabitaciones, numHabitaciones), None)
+    cola2 = np.full((numHabitaciones, numHabitaciones), None)
+    matrizBool1 = np.full((numHabitaciones,numHabitaciones), False)
+    matrizBool2 = np.full((numHabitaciones, numHabitaciones), False)
     #obtengo las posiciones de los puntos para inicializarlos a 0
+    puntoInicialReal = puntoInicio
+    puntoFinalReal = puntoFin
+    puntoIntermedioReal = []
+    resultado = 0 #servira para al final indicar si se ha encontrado un camino o no; 0 -> SI, 1 -> NO
     inicio = puntoMatrizHabitaciones(puntoInicio)
     fin = puntoMatrizHabitaciones(puntoFin)
     cola1[inicio[0]][inicio[1]] = 0
     cola2[fin[0]][fin[1]] = 0
-
+    contadorFinal = 0
     condicion = False
     while condicion == False:
-        puntos1, habitaciones1 = damePuntos(matriz, puntoInicio)
-        puntos2, habitaciones2 = damePuntos(matriz, puntoFin)
 
-        if matrizBool[inicio[0]][inicio[1]] == True: condicion = True
-        else: matrizBool[inicio[0]][inicio[1]] = True
-        if matrizBool[fin[0]][fin[1]] == True: condicion = True
-        else: matrizBool[fin[0]][fin[1]] = True
-        
-        distanciaAuxiliar = math.inf
-        puntoMenor1 = []
+        p1, h1 = damePuntos(matriz, puntoInicio)
+        p2, h2 = damePuntos(matriz, puntoFin)
+        matrizBool1[inicio[0]][inicio[1]] = True
+        matrizBool2[fin[0]][fin[1]] = True
+
+        # Con este bucle estamos llenando la cola con los valores de las distancias que se usaran para comparar
+        # y decidir cual sera el punto desde el que seguiremos buscando el camino
+        habitaciones1 = []
+        puntos1 = []
         contador = 0
-        habitacion1 = []
-        for i in puntos1:
-            distance = matriz[i[0]][i[1]]
-            if distance <= distanciaAuxiliar: 
-                distanciaAuxiliar = distance
-                puntoMenor1 = i
-                habitacion1 = habitaciones1[contador]
+        for i in h1:
+            if matrizBool1[i[0]][i[1]] == False:
+                punto = p1[contador]
+                suma = cola1[inicio[0]][inicio[1]] + matriz[punto[0]][punto[1]]
+                if cola1[i[0]][i[1]] == None:
+                    cola1[i[0]][i[1]] = suma
+                    puntos1.append(p1[contador])
+                    habitaciones1.append(i)
+                elif cola1[i[0]][i[1]] > suma:
+                    cola1[i[0]][i[1]] = suma
+                    puntos1.append(p1[contador])
+                    habitaciones1.append(i)
+                else: pass
+            else: pass
+            contador += 1
+
+        # Repetimos el bucle de arriba pero este caso es para la cola2, o la cola de los puntos que empiezan por el final
+    
+        habitaciones2 = []
+        puntos2 = []
+        contador = 0
+        for i in h2:
+            if matrizBool2[i[0]][i[1]] == False:
+                punto = p2[contador]
+                suma = cola2[fin[0]][fin[1]] + matriz[punto[0]][punto[1]]
+                if cola2[i[0]][i[1]] == None:
+                    cola2[i[0]][i[1]] = suma
+                    puntos2.append(p2[contador])
+                    habitaciones2.append(i)
+                elif cola2[i[0]][i[1]] > suma:
+                    cola2[i[0]][i[1]] = suma
+                    puntos2.append(p2[contador])
+                    habitaciones2.append(i)
+                else: pass
             else: pass
             contador += 1
         
-        distanciaAuxiliar = math.inf
-        puntoMenor2 = []
-        contador = 0
-        habitacion2 = []
-        for i  in puntos2:
-            distance = matriz[i[0]][i[1]]
-            if distance <= distanciaAuxiliar: 
-                distanciaAuxiliar = distance
-                puntoMenor2 = i
-                habitacion2 = habitaciones2[contador]
-            else: pass 
-            contador += 1
+        # Buscamos el valor minimo en ambos casos para continuar buscando los elementos del camino
+        min1 = math.inf
+        min2 = math.inf
+        pmin1 = []
+        pmin2 = []
+        for i in range(len(cola1)):
+            for j in range(len(cola1)):
+                if cola1[i][j] != None:
+                    if matrizBool1[i][j] != True and cola1[i][j] <= min1:
+                        min1 = cola1[i][j]
+                        pmin1 = [i,j]
+                    else: pass
+                else: pass
+
+                if cola2[i][j] != None:
+                    if matrizBool2[i][j] != True and cola2[i][j] <= min2:
+                        min2 = cola2[i][j]
+                        pmin2 = [i,j]
+                    else: pass
+                else: pass                
+        #en pmin1 y pmin2 se almacenan las habitaciones sobre las que se buscara el resto 
+
+        if cola2[pmin1[0]][pmin1[1]] != None: 
+            puntoIntermedioReal = puntoReal(pmin1)
+            resultado = 0
+            condicion = True
+        elif cola1[pmin2[0]][pmin2[1]] != None:
+            puntoIntermedioReal = puntoReal(pmin2)
+            resultado = 0
+            condicion = True
+        else: 
+            inicio, fin = pmin1, pmin2
+            puntoInicio = puntoReal(inicio)
+            puntoFin = puntoReal(fin)
+        
+        contadorFinal += 1
+        if contadorFinal == (np.size(cola1)*10): 
+            resultado = 1 # lo usaremos para lanzar un mensaje de error
+            condicion = True # condicion de salida por si no existe un camino
+
+    # una vez se han encontrado vamos a dibujar el camino
+    if resultado == 0:
+        pintaCaminoMejor(cola1, puntoIntermedioReal, puntoInicialReal, matriz)
+        pintaCaminoMejor(cola2, puntoIntermedioReal, puntoFinalReal, matriz)
+        return resultado
+    else:
+        return resultado
+
+
+
+
+
+        
+
 
         
 
@@ -451,7 +533,8 @@ numeroHabitaciones = size
 
 
 dibujamela(solucion[0],solucion[1], solucion[2], size)
-valor = djikstra(matriz, puntoInicial, puntoFinal, numeroHabitaciones)
+#valor = djikstra(matriz, puntoInicial, puntoFinal, numeroHabitaciones)
+valor = djikstraBidireccional(matriz, puntoInicial, puntoFinal, numeroHabitaciones)
 if valor == 0:
     plot((puntoInicial[1])/(size*2+1), (len(matriz)- 1 - puntoInicial[0])/(size*2+1),  'sc')
     plot(puntoFinal[1]/(size*2+1), (len(matriz)- 1 - puntoFinal[0])/(size*2+1), 'sr')
