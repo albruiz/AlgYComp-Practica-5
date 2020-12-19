@@ -479,6 +479,13 @@ def djikstraBidireccional(matriz, puntoInicio, puntoFin, numHabitaciones):
                 else: pass                
         #en pmin1 y pmin2 se almacenan las habitaciones sobre las que se buscara el resto 
 
+        if pmin1 == [] or pmin2 == []:
+            resultado = 1
+            condicion = True
+            break
+        else: pass
+
+
         if cola2[pmin1[0]][pmin1[1]] != None: 
             puntoIntermedioReal = puntoReal(pmin1)
             resultado = 0
@@ -520,7 +527,7 @@ def djikstraBidireccional(matriz, puntoInicio, puntoFin, numHabitaciones):
 
 #main
 solucion = []
-size = 20
+size = 5
 ratio = 1
 seed = 1312
 seed2 = 1213
